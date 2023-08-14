@@ -1,0 +1,22 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "granulersampleclient": "StartDebugging",
+        "granulersampleclusternode": "StartDebugging",
+        "redis": "StartWithoutDebugging"
+      }
+    },
+    "StartedManagedServices": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "granulersampleclient": "StartDebugging",
+        "granulersampleclusternode": "StartDebugging",
+        "redis": "DoNotStart"
+      }
+    }
+  }
+}

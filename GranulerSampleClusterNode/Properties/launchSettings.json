@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "GranulerSampleClusterNode": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

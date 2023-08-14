@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "GranulerSampleClient": {
+      "commandName": "Project"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
