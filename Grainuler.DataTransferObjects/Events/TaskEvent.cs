@@ -1,4 +1,4 @@
-﻿namespace Grainuler.DataTransferObjects
+﻿namespace Grainuler.DataTransferObjects.Events
 {
     public class TaskEvent
     {

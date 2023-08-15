@@ -12,6 +12,9 @@ namespace OrleansBasics
 {
     public class Program
     {
+        public const string MainTaskId = "job1";
+        public const string DependedTaskId = "job2";
+
         static int Main(string[] args)
         {
             var builder = new ConfigurationBuilder();
@@ -47,14 +50,23 @@ namespace OrleansBasics
 
         private static async Task InitateGrainuler(IClusterClient client)
         {
-            var obs = client.GetGrain<ITaskCompletedEventObserver>("1");
-            await obs.OnCompletedAsync();
-            var builder = new ScheduleTaskGrainBuilder(client, "job1");
+         
+            var builder = new ScheduleTaskGrainBuilder(client, MainTaskId);
             await builder
-            .AddPayload(typeof(TestClass), "Run", new object[] { "testInstance1" }, new object[] { DateTime.Now })
-            .AddTrigger(TimeSpan.FromSeconds(0), TimeSpan.FromMinutes(1))
+            .AddPayload(typeof(TestClass), "Run", new object[] { "testInstance1" }, new object[] { DateTime.Now }, false)
+            .AddOnScheduleTrigger(TimeSpan.FromSeconds(0), TimeSpan.FromMinutes(1))
             .Trigger();
 
+
+            var builder2 = new ScheduleTaskGrainBuilder(client, DependedTaskId);
+            await builder2
+            .AddPayload(typeof(ReactiveTestClass), "ReactiveRun", new object[] { }, new object[] { DateTime.Now },true)
+            .AddOnSuccededTrigger(MainTaskId)
+            .Trigger();
+
+
+            //var obs = client.GetGrain<ITaskCompletedEventObserver>("1");
+            //await obs.SetSubscription(MainTaskId);
 
         }
         private static async Task<IClusterClient> ConnectClient(IConfiguration configuration)

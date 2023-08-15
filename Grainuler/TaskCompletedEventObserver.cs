@@ -1,5 +1,6 @@
 ﻿using Grainuler.Abstractions;
-using Grainuler.DataTransferObjects;
+using Grainuler.DataTransferObjects.Events;
+using Grainuler.DataTransferObjects.Exceptions;
 using Orleans;
 using Orleans.Streams;
 
@@ -9,20 +10,38 @@ namespace Grainuler
     {
 
         private readonly IClusterClient _clusterClient;
+        private Dictionary<string, StreamSubscriptionHandle<TaskEvent>> _subscriptions;
 
         public TaskCompletedEventObserver(IClusterClient clusterClient)
         {
             _clusterClient = clusterClient;
+            _subscriptions = new Dictionary<string, StreamSubscriptionHandle<TaskEvent>>();
+        }
+
+        public async Task SetSubscription(string taskId)
+        {
+            var taskGrain = _clusterClient.GetGrain<IScheduleTaskGrain>(taskId);
+            var streamProvider = GetStreamProvider(ScheduleTaskGrain.StreamProviderName);
+            var streamId = await taskGrain.GetStreamId();
+            var stream = streamProvider.GetStream<TaskEvent>(streamId, "default");
+            if (stream != null)
+            {
+                var subscription = await stream.SubscribeAsync(this);
+                if (!_subscriptions.ContainsKey(taskId))
+                    _subscriptions.Add(taskId, subscription);
+                else
+                {
+                    var oldSubscription = _subscriptions[taskId];
+                    await oldSubscription.UnsubscribeAsync();
+                    _subscriptions[taskId] = subscription;
+                }
+            }
         }
 
         public async override Task OnActivateAsync()
         {
              await base.OnActivateAsync();
-            var taskGrain = _clusterClient.GetGrain<IScheduleTaskGrain>("job1");
-            var streamProvider = GetStreamProvider(ScheduleTaskGrain.StreamProviderName);
-            var streamId =await taskGrain.GetStreamId();
-            var stream = streamProvider.GetStream<TaskEvent>(streamId, "default");
-            await stream.SubscribeAsync(this);
+          
         }
 
         public Task OnCompletedAsync()
@@ -70,6 +89,13 @@ namespace Grainuler
             Console.WriteLine($"Completed Time: {item?.EndTime}");
             Console.WriteLine($"Message: {item?.Message}");
             return;
+        }
+
+        public async Task Unsubscribe(string taskId)
+        {
+            var subscription = _subscriptions.GetValueOrDefault(taskId);
+            if (subscription != default)
+                await subscription.UnsubscribeAsync();
         }
     }
 }

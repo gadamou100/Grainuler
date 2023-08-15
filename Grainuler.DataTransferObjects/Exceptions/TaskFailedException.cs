@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace Grainuler.DataTransferObjects
+namespace Grainuler.DataTransferObjects.Exceptions
 {
     public class TaskFailedException : Exception
     {

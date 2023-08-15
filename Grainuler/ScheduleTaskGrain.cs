@@ -1,29 +1,36 @@
 ﻿using Grainuler.Abstractions;
 using Grainuler.DataTransferObjects;
+using Grainuler.DataTransferObjects.Events;
+using Grainuler.DataTransferObjects.Exceptions;
+using Grainuler.DataTransferObjects.Triggers;
 using Orleans;
 using Orleans.EventSourcing;
 using Orleans.Providers;
 using Orleans.Runtime;
 using Orleans.Streams;
+using System.Diagnostics;
 
 namespace Grainuler
 {
     [StorageProvider(ProviderName = ProviderStorageName)]
-    public class ScheduleTaskGrain : JournaledGrain<ScheduleTaskGrainState>, IScheduleTaskGrain
+    public class ScheduleTaskGrain : JournaledGrain<ScheduleTaskGrainState>, IScheduleTaskGrain, ITaskCompletedEventObserver, IAsyncObserver<TaskEvent>
     {
         public const string ProviderStorageName = "Grainuler_Store";
         public const string StreamProviderName = "Grainuler";
         private IAsyncStream<TaskEvent> _stream;
         private  Payload _payload;
-        private IEnumerable<Trigger> _triggers;
+        private Dictionary<string,ReactiveTrigger> _reactiveTriggers;
         private Guid? streamId;
-
+        private readonly IClusterClient _clusterClient;
+        private  Dictionary<string,StreamSubscriptionHandle<TaskEvent>> _subscriptions;
 
         private readonly Dictionary<string,(IGrainReminder Reminder, Trigger Trigger)> _grainReminders;
-        public ScheduleTaskGrain()
+        public ScheduleTaskGrain(IClusterClient clusterClient)
         {
 
             _grainReminders = new Dictionary<string, (IGrainReminder Reminder, Trigger Trigger)>();
+            _clusterClient = clusterClient;
+            _subscriptions = new Dictionary<string, StreamSubscriptionHandle<TaskEvent>>();
         }
 
         public override async Task OnActivateAsync()
@@ -35,9 +42,25 @@ namespace Grainuler
                 streamId = Guid.NewGuid();
             
             _stream = streamProvider.GetStream<TaskEvent>(streamId.Value, "default");
-            //await _stream.SubscribeAsync(new TaskCompletedEventObserver());
+            await InitiateReactivedTriggers();
             await  base.OnActivateAsync();
         }
+
+        private async Task InitiateReactivedTriggers()
+        {
+            _reactiveTriggers = new Dictionary<string, ReactiveTrigger>();
+            var triggers = State?.InitiationParameter?.Triggers ?? Array.Empty<Trigger>();
+            foreach (var trigger in triggers)
+            {
+                if(trigger is ReactiveTrigger reactiveTrigger)
+                {
+                    _ = _reactiveTriggers.Remove(reactiveTrigger.TriggerId);
+                    await SetSubscription(reactiveTrigger.TaskId);
+                    _reactiveTriggers.Add(reactiveTrigger.TriggerId, reactiveTrigger);
+                }
+            }
+        }
+
         public Task<Guid> GetStreamId() => Task.FromResult(streamId ?? default);
 
         public async Task Initiate(ScheduleTaskGrainInitiationParameter parameter)
@@ -47,27 +70,42 @@ namespace Grainuler
             this.GetPrimaryKey(out var key);
 
             _payload = parameter.Payload;
-            _triggers = parameter.Triggers;
+            var triggers = parameter?.Triggers?
+                .GroupBy(p=>p.TriggerId)
+                .ToDictionary(p=>p.Key,p=>p.First())
+                ?? new Dictionary<string, Trigger>();
        
 
 
-            foreach (var trigger in _triggers)
+            foreach (var trigger in triggers.Values)
             {
-                string reminderName = $"Schedule_{key}_{trigger.TriggerId}";
-                var grainReminder = await RegisterOrUpdateReminder(
-              reminderName,
-              trigger.TriggerTime,
-              trigger.RepeatTime);
-                if (_grainReminders.ContainsKey(reminderName))
-                    _grainReminders[reminderName] = (grainReminder, trigger);
-                else
-                    _grainReminders.Add(reminderName, (grainReminder, trigger));
-            }
-          
-            
+                if (trigger is ScheduleTrigger scheduleTrigger)
+                    await RegisterScheduleTrigger(key, scheduleTrigger, scheduleTrigger);
+                else if (trigger is ReactiveTrigger reactiveTrigger )
+                {
+                    if (reactiveTrigger.TaskId != key && !_reactiveTriggers.ContainsKey(reactiveTrigger.TriggerId))
+                    {
+                        await SetSubscription(reactiveTrigger.TaskId);
+                        _reactiveTriggers.Add(reactiveTrigger.TriggerId, reactiveTrigger);
+                    }
+                }
+                
+            }   
         }
 
-      
+        private async Task RegisterScheduleTrigger(string? key, ScheduleTrigger trigger, ScheduleTrigger scheduleTrigger)
+        {
+            string reminderName = $"Schedule_{key}_{trigger.TriggerId}";
+            var grainReminder = await RegisterOrUpdateReminder(
+          reminderName,
+          scheduleTrigger.TriggerTime,
+          trigger.RepeatTime);
+            if (_grainReminders.ContainsKey(reminderName))
+                _grainReminders[reminderName] = (grainReminder, trigger);
+            else
+                _grainReminders.Add(reminderName, (grainReminder, trigger));
+        }
+
 
         public async Task ReceiveReminder(string reminderName, TickStatus status)
         {
@@ -99,12 +137,10 @@ namespace Grainuler
             {
                 try
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Executing at {DateTime.Now}");
+                    Trace.WriteLine($"Executing at {DateTime.Now}");
                     await PayloadInvoker.Invoke(_payload);
                     isCurrentExecutionAttempSuccess = true;
-                    Console.WriteLine($"Finish Execution at {DateTime.Now}");
-                    Console.ResetColor();
+                    Trace.WriteLine($"Finish Execution at {DateTime.Now}");
                     break;
                 }
                 catch (Exception ex)
@@ -175,6 +211,61 @@ namespace Grainuler
             base.RaiseEvent(@event);
             await ConfirmEvents();
             await _stream.OnErrorAsync(taskFailedException);
+        }
+
+        public Task OnCompletedAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        public async Task OnErrorAsync(Exception ex)
+        {
+            if(ex is TaskFailedException failedException)
+            {
+                var trigger = _reactiveTriggers.GetValueOrDefault($"Task_Failed_{failedException.Event.TaskId}");
+                if(trigger != default)
+                    await Execute(trigger);
+            }
+        }
+
+        public async Task OnNextAsync(TaskEvent item, StreamSequenceToken token = null)
+        {
+            var trigger = _reactiveTriggers.GetValueOrDefault($"Task_Completed_{item.TaskId}");
+            if (trigger != default)
+                await Execute(trigger);
+        }
+
+        public async Task SetSubscription(string taskId)
+        {
+            IAsyncStream<TaskEvent> stream = await GetStreamFromTask(taskId);
+            if(stream != null)
+            {
+                var subscription = await stream.SubscribeAsync(this);
+                if(!_subscriptions.ContainsKey(taskId))
+                    _subscriptions.Add(taskId, subscription);
+                else
+                {
+                    var oldSubscription = _subscriptions[taskId];
+                    await oldSubscription.UnsubscribeAsync();
+                    _subscriptions[taskId] = subscription;
+                }
+            }
+
+        }
+        public async Task Unsubscribe(string taskId)
+        {
+            var subscription = _subscriptions.GetValueOrDefault(taskId);
+            if(subscription!= default)
+                await subscription.UnsubscribeAsync();
+        }
+
+        private async Task<IAsyncStream<TaskEvent>> GetStreamFromTask(string taskId)
+        {
+            var taskGrain = _clusterClient.GetGrain<IScheduleTaskGrain>(taskId);
+            var streamProvider = GetStreamProvider(StreamProviderName);
+            var streamId = await taskGrain.GetStreamId();
+            var stream = streamProvider.GetStream<TaskEvent>(streamId, "default");
+            return stream;
         }
     }
 }

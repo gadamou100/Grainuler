@@ -1,11 +1,7 @@
 ﻿using Grainuler.Abstractions;
 using Grainuler.DataTransferObjects;
+using Grainuler.DataTransferObjects.Triggers;
 using Orleans;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Grainuler
 {
@@ -21,7 +17,7 @@ namespace Grainuler
             _scheduleTaskGrainConstructorParameter = new ScheduleTaskGrainInitiationParameter();
         }
 
-        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] typeArguments, object[] methodArguments)
+        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] typeArguments, object[] methodArguments, bool isStatic)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
@@ -30,17 +26,18 @@ namespace Grainuler
                 ClassName = type.Name,
                 MethodName = methodName,
                 MethodArguments = methodArguments,
-                TypeArguments = typeArguments
+                TypeArguments = typeArguments,
+                IsStatic = isStatic
             };
             return this;
         }
-        public IScheduleTaskGrainBuilder AddTrigger(TimeSpan triggerTimeSpan, TimeSpan repeatTimeSpan, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null)
+        public IScheduleTaskGrainBuilder AddOnScheduleTrigger(TimeSpan triggerTimeSpan, TimeSpan repeatTimeSpan, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null)
         {
             maxRetryPeriod ??= TimeSpan.MaxValue;
             waitTimeWithinRetries ??= TimeSpan.FromSeconds(10);
             expiredDate ??= DateTime.MaxValue;
             expireTimeSpan ??= TimeSpan.MaxValue;
-            var trigger = new Trigger
+            var trigger = new ScheduleTrigger
             {
                 TriggerTime = triggerTimeSpan,
                 RepeatTime = repeatTimeSpan,
@@ -54,6 +51,48 @@ namespace Grainuler
             _scheduleTaskGrainConstructorParameter.Triggers.Add(trigger);
             return this;
         }
+
+        public IScheduleTaskGrainBuilder AddOnSuccededTrigger(string taskId, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null)
+        {
+            maxRetryPeriod ??= TimeSpan.MaxValue;
+            waitTimeWithinRetries ??= TimeSpan.FromSeconds(10);
+            expiredDate ??= DateTime.MaxValue;
+            expireTimeSpan ??= TimeSpan.MaxValue;
+            var trigger = new TaskCompletedTrigger
+            {
+                TaskId = taskId,
+                IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
+                MaxRetryNumber = maxRetryNumber,
+                MaxRetryPeriod = maxRetryPeriod.Value,
+                WaitTimeWithinRetries = waitTimeWithinRetries.Value,
+                ExpireDate = expiredDate.Value,
+                ExpireTimeSpan = expireTimeSpan.Value,
+            };
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(trigger);
+            return this;
+        }
+
+
+        public IScheduleTaskGrainBuilder AddOnFailureTrigger(string taskId, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null)
+        {
+            maxRetryPeriod ??= TimeSpan.MaxValue;
+            waitTimeWithinRetries ??= TimeSpan.FromSeconds(10);
+            expiredDate ??= DateTime.MaxValue;
+            expireTimeSpan ??= TimeSpan.MaxValue;
+            var trigger = new TaskFailedTrigger
+            {
+                TaskId = taskId,
+                IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
+                MaxRetryNumber = maxRetryNumber,
+                MaxRetryPeriod = maxRetryPeriod.Value,
+                WaitTimeWithinRetries = waitTimeWithinRetries.Value,
+                ExpireDate = expiredDate.Value,
+                ExpireTimeSpan = expireTimeSpan.Value,
+            };
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(trigger);
+            return this;
+        }
+
 
         public  Task<IScheduleTaskGrainBuilder> Trigger()
         {
