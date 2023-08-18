@@ -8,6 +8,6 @@
         IScheduleTaskGrainBuilder AddOnFailureTrigger(string taskId, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null);
 
         Task<IScheduleTaskGrainBuilder> Trigger();
-
+        IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[] typeArguments, object[] methodArguments, bool isStatic);
     }
 }

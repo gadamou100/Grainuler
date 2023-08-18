@@ -1,15 +1,16 @@
-﻿using Grainuler.Abstractions;
-using Grainuler.DataTransferObjects;
+﻿using Grainuler.DataTransferObjects;
 using Grainuler.DataTransferObjects.Triggers;
 using Orleans;
 
-namespace Grainuler
+namespace Grainuler.Abstractions
 {
     public class ScheduleTaskGrainBuilder : IScheduleTaskGrainBuilder
     {
         private readonly ScheduleTaskGrainInitiationParameter _scheduleTaskGrainConstructorParameter;
         private readonly string _taskName;
         private readonly IClusterClient _clusterClient;
+        public const string ProviderStorageName = "Grainuler_Store";
+        public const string StreamProviderName = "Grainuler";
         public ScheduleTaskGrainBuilder(IClusterClient clusterClient, string taskName)
         {
             _clusterClient = clusterClient;
@@ -31,6 +32,23 @@ namespace Grainuler
             };
             return this;
         }
+
+        public IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[] typeArguments, object[] methodArguments, bool isStatic)
+        {
+            _scheduleTaskGrainConstructorParameter.Payload = new Payload
+            {
+                AssemblyName = assemblyName ?? string.Empty,
+                AssemblyPath = assemblyPath ?? string.Empty,
+                ClassName = className,
+                MethodName = methodName,
+                MethodArguments = methodArguments,
+                TypeArguments = typeArguments,
+                IsStatic = isStatic
+            };
+            return this;
+        }
+
+
         public IScheduleTaskGrainBuilder AddOnScheduleTrigger(TimeSpan triggerTimeSpan, TimeSpan repeatTimeSpan, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null)
         {
             maxRetryPeriod ??= TimeSpan.MaxValue;
@@ -94,10 +112,10 @@ namespace Grainuler
         }
 
 
-        public  Task<IScheduleTaskGrainBuilder> Trigger()
+        public Task<IScheduleTaskGrainBuilder> Trigger()
         {
             var friend = _clusterClient.GetGrain<IScheduleTaskGrain>(_taskName);
-             friend.Initiate(_scheduleTaskGrainConstructorParameter);
+            friend.Initiate(_scheduleTaskGrainConstructorParameter);
             return Task.FromResult(this as IScheduleTaskGrainBuilder);
         }
     }

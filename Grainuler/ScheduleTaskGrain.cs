@@ -12,12 +12,12 @@ using System.Diagnostics;
 
 namespace Grainuler
 {
-    [StorageProvider(ProviderName = ProviderStorageName)]
+    [StorageProvider(ProviderName = ScheduleTaskGrainBuilder.ProviderStorageName)]
     public class ScheduleTaskGrain : JournaledGrain<ScheduleTaskGrainState>, IScheduleTaskGrain, ITaskCompletedEventObserver, IAsyncObserver<TaskEvent>
     {
-        public const string ProviderStorageName = "Grainuler_Store";
-        public const string StreamProviderName = "Grainuler";
+        
         private IAsyncStream<TaskEvent> _stream;
+        private readonly IPayloadInvoker _payloadInvoker;
         private  Payload _payload;
         private Dictionary<string,ReactiveTrigger> _reactiveTriggers;
         private Guid? streamId;
@@ -25,17 +25,18 @@ namespace Grainuler
         private  Dictionary<string,StreamSubscriptionHandle<TaskEvent>> _subscriptions;
 
         private readonly Dictionary<string,(IGrainReminder Reminder, Trigger Trigger)> _grainReminders;
-        public ScheduleTaskGrain(IClusterClient clusterClient)
+        public ScheduleTaskGrain(IClusterClient clusterClient, IPayloadInvoker payloadInvoker)
         {
 
             _grainReminders = new Dictionary<string, (IGrainReminder Reminder, Trigger Trigger)>();
             _clusterClient = clusterClient;
             _subscriptions = new Dictionary<string, StreamSubscriptionHandle<TaskEvent>>();
+            _payloadInvoker = payloadInvoker;
         }
 
         public override async Task OnActivateAsync()
         {
-            var streamProvider = GetStreamProvider(StreamProviderName);
+            var streamProvider = GetStreamProvider(ScheduleTaskGrainBuilder.StreamProviderName);
             //todo retrieve it from the state.
             streamId =  State?.StreamId;
             if (streamId == null)
@@ -124,7 +125,6 @@ namespace Grainuler
         {
             return GetDateFromTimespanAddition(trigger.ExpireTimeSpan) < DateTime.UtcNow || trigger.ExpireDate < DateTime.UtcNow;
         }
-
         private async Task Execute(Trigger trigger)
         {
             ushort currentRetry = 0;
@@ -132,35 +132,52 @@ namespace Grainuler
             var retryUntil = GetDateFromTimespanAddition(trigger.MaxRetryPeriod);
             var waitTime = trigger.WaitTimeWithinRetries;
             bool isCurrentExecutionAttempSuccess=false;
-            Exception? lastException = null;
+            var exceptions = new List<(Exception Exception, DateTime Occurence)>();
+
             do
             {
                 try
                 {
+
                     Trace.WriteLine($"Executing at {DateTime.Now}");
-                    await PayloadInvoker.Invoke(_payload);
+                    var result = await _payloadInvoker.Invoke(_payload);
                     isCurrentExecutionAttempSuccess = true;
-                    Trace.WriteLine($"Finish Execution at {DateTime.Now}");
+                    Trace.WriteLine($"Execution finished at {DateTime.Now}");
                     break;
+
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    lastException = ex;
-                    if (currentRetry > trigger.MaxRetryNumber || retryUntil < DateTime.UtcNow)
+                    (bool retriesHaveBeenExhausted, currentRetry, waitTime) = await WaitForRetry(exceptions, e, retryUntil, currentRetry, trigger.MaxRetryNumber, trigger.IsExpnentailBackoffRetry, waitTime);
+                    if (retriesHaveBeenExhausted)
+                    {
+                        Trace.WriteLine($"Execution failed at {DateTime.Now} after {currentRetry} number of retries");
                         break;
-                    if(trigger.IsExpnentailBackoffRetry && currentRetry!=0)
-                        waitTime = waitTime *2;
-                    await Task.Delay(waitTime);
-                    currentRetry++;
+                    }
                 }
-            }while (true);
+
+            } while (true);
             var stopExecutionTime = DateTime.UtcNow;
             if (isCurrentExecutionAttempSuccess)
                 await RaiseSuccedEvent(currentRetry, startExecutionTime, stopExecutionTime, trigger.TriggerId);
             else
-                await RaiseFailureEvent(currentRetry, startExecutionTime, stopExecutionTime,trigger.TriggerId, lastException);
+                await RaiseFailureEvent(currentRetry, startExecutionTime, stopExecutionTime,trigger.TriggerId, exceptions);
         }
+        private async Task<(bool,ushort,TimeSpan)> WaitForRetry(List<(Exception Exception, DateTime Occurence)> exceptions,Exception currentException,DateTime retryUntil,ushort currentRetry,int maxRetryNumber,bool isExpnentailBackoffRetry, TimeSpan waitTime)
+        {
+            exceptions.Add((currentException, DateTime.UtcNow));
+            if (currentRetry >= maxRetryNumber || retryUntil < DateTime.UtcNow)
+            {
+                return (true, currentRetry, waitTime);
+            }
+            if (isExpnentailBackoffRetry && currentRetry != 0)
+                waitTime = waitTime * 2;
+            await Task.Delay(waitTime);
+            currentRetry++;
+            
+            return (false,currentRetry,waitTime);
 
+        }
         private static DateTime GetDateFromTimespanAddition(TimeSpan timeSpan)
         {
             try
@@ -193,7 +210,7 @@ namespace Grainuler
             await ConfirmEvents();
             await _stream.OnNextAsync(@event);
         }
-        private async Task RaiseFailureEvent(ushort retryNumber, DateTime startTime, DateTime endTime, string triggerId,Exception? e)
+        private async Task RaiseFailureEvent(ushort retryNumber, DateTime startTime, DateTime endTime, string triggerId, List<(Exception Exception, DateTime Occurence)> exceptions)
 
         {
             this.GetPrimaryKey(out var key);
@@ -205,9 +222,10 @@ namespace Grainuler
                 ExecutionNumber = State.ExecutionNumber + 1,
                 RetriesNumber = retryNumber,
                 InitiationParameter = State.InitiationParameter,
-                TriggerId = triggerId
+                TriggerId = triggerId,
+                Exceptions = exceptions
             };
-            var taskFailedException = new TaskFailedException(@event, e);
+            var taskFailedException = new TaskFailedException(@event);
             base.RaiseEvent(@event);
             await ConfirmEvents();
             await _stream.OnErrorAsync(taskFailedException);
@@ -262,7 +280,7 @@ namespace Grainuler
         private async Task<IAsyncStream<TaskEvent>> GetStreamFromTask(string taskId)
         {
             var taskGrain = _clusterClient.GetGrain<IScheduleTaskGrain>(taskId);
-            var streamProvider = GetStreamProvider(StreamProviderName);
+            var streamProvider = GetStreamProvider(ScheduleTaskGrainBuilder.StreamProviderName);
             var streamId = await taskGrain.GetStreamId();
             var stream = streamProvider.GetStream<TaskEvent>(streamId, "default");
             return stream;

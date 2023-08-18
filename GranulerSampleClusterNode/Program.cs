@@ -7,6 +7,8 @@ using Orleans.Reminders.Redis;
 using Grainuler;
 using Microsoft.Extensions.Configuration;
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using Grainuler.Abstractions;
 
 namespace OrleansTestProject
 {
@@ -18,7 +20,6 @@ namespace OrleansTestProject
             var builder = new ConfigurationBuilder();
             builder.SetBasePath(Directory.GetCurrentDirectory())
                    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
             IConfiguration config = builder.Build();
             return RunMainAsync(config).Result;
         }
@@ -72,7 +73,7 @@ namespace OrleansTestProject
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ScheduleTaskGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddConsole())
-                 .AddRedisGrainStorage(ScheduleTaskGrain.ProviderStorageName, optionsBuilder => optionsBuilder.Configure(options =>
+                 .AddRedisGrainStorage(ScheduleTaskGrainBuilder.ProviderStorageName, optionsBuilder => optionsBuilder.Configure(options =>
                  {
                      options.ConnectionString = redisConnection;
                      options.UseJson = true;
@@ -89,10 +90,14 @@ namespace OrleansTestProject
                      options.UseJson = true;
                      options.DatabaseNumber = 3;
                  }))
-                 .AddSimpleMessageStreamProvider(ScheduleTaskGrain.StreamProviderName, options =>
+                 .AddSimpleMessageStreamProvider(ScheduleTaskGrainBuilder.StreamProviderName, options =>
                  {
                      options.FireAndForgetDelivery = true;
-                 });
+                 })
+                  .ConfigureServices((_, services) =>
+                  {
+                      services.AddSingleton<IPayloadInvoker, PayloadInvoker>();
+                  });
 
             ;
             var host = builder.Build();

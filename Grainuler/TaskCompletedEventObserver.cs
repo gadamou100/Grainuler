@@ -21,7 +21,7 @@ namespace Grainuler
         public async Task SetSubscription(string taskId)
         {
             var taskGrain = _clusterClient.GetGrain<IScheduleTaskGrain>(taskId);
-            var streamProvider = GetStreamProvider(ScheduleTaskGrain.StreamProviderName);
+            var streamProvider = GetStreamProvider(ScheduleTaskGrainBuilder.StreamProviderName);
             var streamId = await taskGrain.GetStreamId();
             var stream = streamProvider.GetStream<TaskEvent>(streamId, "default");
             if (stream != null)

@@ -86,7 +86,7 @@ namespace OrleansBasics
                     options.ServiceId = configuration["Orleans:ServiceId"];
                 })
                 .ConfigureLogging(logging => logging.AddConsole())
-                .AddSimpleMessageStreamProvider(ScheduleTaskGrain.StreamProviderName)
+                .AddSimpleMessageStreamProvider(ScheduleTaskGrainBuilder.StreamProviderName)
                 .Build();
             //await Task.Delay(3000);
             await client.Connect();

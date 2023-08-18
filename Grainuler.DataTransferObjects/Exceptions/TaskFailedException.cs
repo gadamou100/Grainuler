@@ -9,7 +9,7 @@ namespace Grainuler.DataTransferObjects.Exceptions
         {
         }
 
-        public TaskFailedException(TaskFailedEvent @event, Exception? innerException) : base(innerException?.Message, innerException)
+        public TaskFailedException(TaskFailedEvent @event) 
         {
             Event = @event;
         }
