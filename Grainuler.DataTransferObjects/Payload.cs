@@ -6,7 +6,7 @@
         public string AssemblyPath { get; set; }
 
         public string ClassName { get; set; }
-        public object[] TypeArguments { get; set; }
+        public object[] ConstructorArguments { get; set; }
         public string MethodName { get; set; }
         public object[] MethodArguments { get; set; }
         public bool IsStatic { get; set; }

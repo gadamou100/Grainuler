@@ -27,7 +27,7 @@ namespace Grainuler.Abstractions
                 ClassName = type.Name,
                 MethodName = methodName,
                 MethodArguments = methodArguments,
-                TypeArguments = typeArguments,
+                ConstructorArguments = typeArguments,
                 IsStatic = isStatic
             };
             return this;
@@ -42,7 +42,7 @@ namespace Grainuler.Abstractions
                 ClassName = className,
                 MethodName = methodName,
                 MethodArguments = methodArguments,
-                TypeArguments = typeArguments,
+                ConstructorArguments = typeArguments,
                 IsStatic = isStatic
             };
             return this;

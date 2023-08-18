@@ -37,7 +37,7 @@ namespace Grainuler
             if (invokeClass.HasNoValue)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
 
-            var currInsance = Activator.CreateInstance(invokeClass.Value, payload.TypeArguments);
+            var currInsance = Activator.CreateInstance(invokeClass.Value, payload.ConstructorArguments);
             if (currInsance == null)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
             var method = currInsance.GetType().GetMethod(payload.MethodName);
