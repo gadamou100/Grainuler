@@ -12,7 +12,7 @@ namespace Grainuler.Tests
         [Fact]
         public async Task TestPayloadInvokerWithInstantClassSuccess()
         {
-           //Arrange
+            //Arrange
             var invoker = new PayloadInvoker();
             var payloadType = typeof(TestClass);
             var now = DateTime.Now;
