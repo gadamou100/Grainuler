@@ -1,5 +1,6 @@
 ﻿using Grainuler.Abstractions;
 using Grainuler.DataTransferObjects;
+using Grainuler.DataTransferObjects.Events;
 
 namespace Grainuler
 {

@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+﻿using Grainuler.DataTransferObjects.Events;
+using System.Runtime.Serialization;
 
 namespace Grainuler.DataTransferObjects.Exceptions
 {

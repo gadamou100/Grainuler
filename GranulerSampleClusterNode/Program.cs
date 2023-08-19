@@ -10,7 +10,7 @@ using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Grainuler.Abstractions;
 
-namespace OrleansTestProject
+namespace GranulerSampleClusterNode
 {
     public class Program
     {
@@ -57,7 +57,7 @@ namespace OrleansTestProject
                    {
                        opt.ConnectionString = redisConnection;
                        opt.Database = 0;
-                 })
+                   })
                 .Configure<ClusterOptions>(options =>
                 {
                     options.ClusterId = clusterId;
@@ -81,12 +81,12 @@ namespace OrleansTestProject
                  }))
                  .ConfigureServices(services => services.UseRedisReminderService(options =>
                  {
-                     options.ConnectionString = redisConnection; 
+                     options.ConnectionString = redisConnection;
                      options.DatabaseNumber = 2;
                  }))
                  .AddRedisGrainStorage(configuration["Orleans:PubSubGrainStorgeName"], optionsBuilder => optionsBuilder.Configure(options =>
                  {
-                     options.ConnectionString = redisConnection; 
+                     options.ConnectionString = redisConnection;
                      options.UseJson = true;
                      options.DatabaseNumber = 3;
                  }))

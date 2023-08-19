@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleTestJobs", "..\Sample
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{51FF5DFD-DC08-4072-A8ED-E0259333E5DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grainuler.Tests", "..\Grainuler.Tests\Grainuler.Tests.csproj", "{5AAC5B67-58E0-4A29-8F16-D64C3066AF3D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grainuler.Tests", "Tests\Grainuler.Tests\Grainuler.Tests.csproj", "{5E29CCDF-B738-42DF-B719-487B1DEB3284}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,16 +55,16 @@ Global
 		{E2A8076F-6ED7-4894-B764-BB16064F3DC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2A8076F-6ED7-4894-B764-BB16064F3DC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2A8076F-6ED7-4894-B764-BB16064F3DC5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5AAC5B67-58E0-4A29-8F16-D64C3066AF3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5AAC5B67-58E0-4A29-8F16-D64C3066AF3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5AAC5B67-58E0-4A29-8F16-D64C3066AF3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5AAC5B67-58E0-4A29-8F16-D64C3066AF3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E29CCDF-B738-42DF-B719-487B1DEB3284}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E29CCDF-B738-42DF-B719-487B1DEB3284}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E29CCDF-B738-42DF-B719-487B1DEB3284}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E29CCDF-B738-42DF-B719-487B1DEB3284}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{5AAC5B67-58E0-4A29-8F16-D64C3066AF3D} = {51FF5DFD-DC08-4072-A8ED-E0259333E5DF}
+		{5E29CCDF-B738-42DF-B719-487B1DEB3284} = {51FF5DFD-DC08-4072-A8ED-E0259333E5DF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {55B86976-E2E8-4217-90B0-5B8FED964ED9}

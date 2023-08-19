@@ -8,7 +8,7 @@ using Orleans.Hosting;
 using SampleTestJobs;
 using System.Net;
 
-namespace OrleansBasics
+namespace GranulerSampleClient
 {
     public class Program
     {
@@ -50,7 +50,7 @@ namespace OrleansBasics
 
         private static async Task InitateGrainuler(IClusterClient client)
         {
-         
+
             var builder = new ScheduleTaskGrainBuilder(client, MainTaskId);
             await builder
             .AddPayload(typeof(TestClass), "Run", new object[] { "testInstance1" }, new object[] { DateTime.Now }, false)
@@ -60,7 +60,7 @@ namespace OrleansBasics
 
             var builder2 = new ScheduleTaskGrainBuilder(client, DependedTaskId);
             await builder2
-            .AddPayload(typeof(ReactiveTestClass), "ReactiveRun", new object[] { }, new object[] { DateTime.Now },true)
+            .AddPayload(typeof(ReactiveTestClass), "ReactiveRun", new object[] { }, new object[] { DateTime.Now }, true)
             .AddOnSuccededTrigger(MainTaskId)
             .Trigger();
 
@@ -77,7 +77,7 @@ namespace OrleansBasics
             };
             IClusterClient client;
             client = new ClientBuilder()
-                 //UseStaticClustering(new IPEndPoint(IPAddress.Parse("192.168.3.10"), 30000))
+                //UseStaticClustering(new IPEndPoint(IPAddress.Parse("192.168.3.10"), 30000))
                 //.UseLocalhostClustering()
                 .UseStaticClustering(endpoints)
                 .Configure<ClusterOptions>(options =>

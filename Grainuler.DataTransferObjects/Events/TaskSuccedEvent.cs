@@ -1,6 +1,4 @@
-﻿using Grainuler.DataTransferObjects.Events;
-
-namespace Grainuler.DataTransferObjects
+﻿namespace Grainuler.DataTransferObjects.Events
 {
     public class TaskSuccedEvent : TaskEvent { }
 }
