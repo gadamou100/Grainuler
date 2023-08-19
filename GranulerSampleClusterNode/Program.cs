@@ -1,14 +1,6 @@
-﻿using Orleans;
-using Orleans.Configuration;
-using Orleans.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
-using Orleans.Reminders.Redis;
-using Grainuler;
+﻿using Grainuler.RedisHosting;
 using Microsoft.Extensions.Configuration;
-using System.Net;
-using Microsoft.Extensions.DependencyInjection;
-using Grainuler.Abstractions;
+using Orleans.Hosting;
 
 namespace GranulerSampleClusterNode
 {
@@ -50,56 +42,10 @@ namespace GranulerSampleClusterNode
             var redisConnection = configuration["Redis:ServerAddress"];
             var clusterId = configuration["Orleans:ClusterId"];
             var serviceId = configuration["Orleans:ServiceId"];
+            var pubSubStotageName = configuration["Orleans:PubSubGrainStorgeName"];
             // define the cluster configuration
-            var builder = new SiloHostBuilder()
-
-                .UseRedisClustering(opt =>
-                   {
-                       opt.ConnectionString = redisConnection;
-                       opt.Database = 0;
-                   })
-                .Configure<ClusterOptions>(options =>
-                {
-                    options.ClusterId = clusterId;
-                    options.ServiceId = serviceId;
-
-                })
-                .Configure<EndpointOptions>(options =>
-                {
-                    var adressList = Dns.GetHostEntry(Dns.GetHostName()).AddressList;
-                    options.AdvertisedIPAddress = adressList.First();
-                    options.GatewayPort = 30000;
-                    options.SiloPort = 11111;
-                })
-                .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(ScheduleTaskGrain).Assembly).WithReferences())
-                .ConfigureLogging(logging => logging.AddConsole())
-                 .AddRedisGrainStorage(ScheduleTaskGrainBuilder.ProviderStorageName, optionsBuilder => optionsBuilder.Configure(options =>
-                 {
-                     options.ConnectionString = redisConnection;
-                     options.UseJson = true;
-                     options.DatabaseNumber = 1;
-                 }))
-                 .ConfigureServices(services => services.UseRedisReminderService(options =>
-                 {
-                     options.ConnectionString = redisConnection;
-                     options.DatabaseNumber = 2;
-                 }))
-                 .AddRedisGrainStorage(configuration["Orleans:PubSubGrainStorgeName"], optionsBuilder => optionsBuilder.Configure(options =>
-                 {
-                     options.ConnectionString = redisConnection;
-                     options.UseJson = true;
-                     options.DatabaseNumber = 3;
-                 }))
-                 .AddSimpleMessageStreamProvider(ScheduleTaskGrainBuilder.StreamProviderName, options =>
-                 {
-                     options.FireAndForgetDelivery = true;
-                 })
-                  .ConfigureServices((_, services) =>
-                  {
-                      services.AddSingleton<IPayloadInvoker, PayloadInvoker>();
-                  });
-
-            ;
+            var builderFactory = new RedisSiloHostBuilderFactory();
+            var builder = builderFactory.GetHostBuilder(redisConnection, clusterId, serviceId, pubSubStotageName);
             var host = builder.Build();
             await host.StartAsync();
             return host;
