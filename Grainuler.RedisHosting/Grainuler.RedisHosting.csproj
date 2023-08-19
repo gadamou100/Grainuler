@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Grainuler.Abstractions\Grainuler.Abstractions.csproj" />
+    <ProjectReference Include="..\Grainuler.Configuration\Grainuler.Configuration.csproj" />
     <ProjectReference Include="..\Grainuler\Grainuler.csproj" />
   </ItemGroup>
 

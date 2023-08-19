@@ -17,6 +17,7 @@
 		<PackageReference Include="OneOf" Version="3.0.255" />
 	</ItemGroup>
 	<ItemGroup>
+	  <ProjectReference Include="..\Grainuler.Configuration\Grainuler.Configuration.csproj" />
 	  <ProjectReference Include="..\Grainuler.DataTransferObjects\Grainuler.DataTransferObjects.csproj" />
 	</ItemGroup>
 </Project>

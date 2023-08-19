@@ -42,10 +42,12 @@ namespace GranulerSampleClusterNode
             var redisConnection = configuration["Redis:ServerAddress"];
             var clusterId = configuration["Orleans:ClusterId"];
             var serviceId = configuration["Orleans:ServiceId"];
-            var pubSubStotageName = configuration["Orleans:PubSubGrainStorgeName"];
+            var pubSubStorageName = configuration["Orleans:PubSubGrainStorgeName"];
             // define the cluster configuration
             var builderFactory = new RedisSiloHostBuilderFactory();
-            var builder = builderFactory.GetHostBuilder(redisConnection, clusterId, serviceId, pubSubStotageName);
+            var config = RedisBuilderConfiguration.CreateDefault(redisConnection,cluserId: clusterId, serviceId: serviceId, pubSubStoreName: pubSubStorageName);
+
+            var builder = builderFactory.GetHostBuilder(config);
             var host = builder.Build();
             await host.StartAsync();
             return host;

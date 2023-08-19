@@ -1,9 +1,9 @@
 ﻿using Orleans.Hosting;
-
+using Grainuler.Configuration;
 namespace Grainuler.Abstractions
 {
-    public interface ISiloHostBuilderFactory
+    public interface ISiloHostBuilderFactory<TConfiguration> where TConfiguration : BuilderConfiguration
     {
-        ISiloHostBuilder GetHostBuilder(string stateStoreConnectionString, string clusterId, string serviceId, string pubSubStorageName, string? clusteringConnectionString=null, string? pubSubStorConnectionString=null);
+        ISiloHostBuilder GetHostBuilder(TConfiguration configuration);
     }
 }
