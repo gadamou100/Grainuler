@@ -11,6 +11,8 @@ namespace Grainuler.Abstractions
         private readonly IClusterClient _clusterClient;
         public const string ProviderStorageName = "Grainuler_Store";
         public const string StreamProviderName = "Grainuler";
+        public IScheduleTaskGrain? Grain { get; private set; }
+        public ScheduleTaskGrainInitiationParameter ScheduleTaskGrainConstructorParameter => _scheduleTaskGrainConstructorParameter;
         public ScheduleTaskGrainBuilder(IClusterClient clusterClient, string taskName)
         {
             _clusterClient = clusterClient;
@@ -18,7 +20,7 @@ namespace Grainuler.Abstractions
             _scheduleTaskGrainConstructorParameter = new ScheduleTaskGrainInitiationParameter();
         }
 
-        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] typeArguments, object[] methodArguments, bool isStatic)
+        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] constructorArguments, object[] methodArguments, bool isStatic)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
@@ -27,13 +29,13 @@ namespace Grainuler.Abstractions
                 ClassName = type.Name,
                 MethodName = methodName,
                 MethodArguments = methodArguments,
-                ConstructorArguments = typeArguments,
+                ConstructorArguments = constructorArguments,
                 IsStatic = isStatic
             };
             return this;
         }
 
-        public IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[] typeArguments, object[] methodArguments, bool isStatic)
+        public IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[] constructorArguments, object[] methodArguments, bool isStatic)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
@@ -42,7 +44,7 @@ namespace Grainuler.Abstractions
                 ClassName = className,
                 MethodName = methodName,
                 MethodArguments = methodArguments,
-                ConstructorArguments = typeArguments,
+                ConstructorArguments = constructorArguments,
                 IsStatic = isStatic
             };
             return this;
@@ -112,10 +114,10 @@ namespace Grainuler.Abstractions
         }
 
 
-        public Task<IScheduleTaskGrainBuilder> Trigger()
+        public Task Trigger()
         {
-            var friend = _clusterClient.GetGrain<IScheduleTaskGrain>(_taskName);
-            friend.Initiate(_scheduleTaskGrainConstructorParameter);
+            Grain = _clusterClient.GetGrain<IScheduleTaskGrain>(_taskName);
+            Grain.Initiate(_scheduleTaskGrainConstructorParameter);
             return Task.FromResult(this as IScheduleTaskGrainBuilder);
         }
     }

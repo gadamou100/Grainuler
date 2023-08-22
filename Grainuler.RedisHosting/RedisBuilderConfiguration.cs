@@ -16,15 +16,15 @@ namespace Grainuler.RedisHosting
         {
             var clusterStoreConfig = new DataStoreConfiguration(0,redisConnectionString);
             var stateStoreConfig = new DataStoreConfiguration(1, redisConnectionString);
-            var reminderSubStorConfig = new DataStoreConfiguration(2, redisConnectionString);
-            var pubSubStorConfig = new DataStoreConfiguration(3, redisConnectionString);
+            var reminderStoreConfig = new DataStoreConfiguration(2, redisConnectionString);
+            var pubSubStoreConfig = new DataStoreConfiguration(3, redisConnectionString);
 
             return new RedisBuilderConfiguration 
             {
                 ClusterStoreConfiguration = clusterStoreConfig,
                 StateStoreConfiguration = stateStoreConfig,
-                ReminderStoreConfiguration = reminderSubStorConfig,
-                PubSubStoreConfiguration = pubSubStorConfig,
+                ReminderStoreConfiguration = reminderStoreConfig,
+                PubSubStoreConfiguration = pubSubStoreConfig,
                 PubSubStoreName = pubSubStoreName,
                 ClusterId = cluserId,
                 ServiceId = serviceId,

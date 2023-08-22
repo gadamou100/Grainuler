@@ -54,7 +54,7 @@ namespace GranulerSampleClient
             var builder = new ScheduleTaskGrainBuilder(client, MainTaskId);
             await builder
             .AddPayload(typeof(TestClass), "Run", new object[] { "testInstance1" }, new object[] { DateTime.Now }, false)
-            .AddOnScheduleTrigger(TimeSpan.FromSeconds(0), TimeSpan.FromMinutes(1))
+            .AddOnScheduleTrigger(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1))
             .Trigger();
 
 
