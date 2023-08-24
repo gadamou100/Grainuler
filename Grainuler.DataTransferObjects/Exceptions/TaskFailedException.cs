@@ -6,6 +6,7 @@ namespace Grainuler.DataTransferObjects.Exceptions
     public class TaskFailedException : Exception
     {
         public TaskFailedEvent Event { get; init; }
+
         public TaskFailedException()
         {
         }

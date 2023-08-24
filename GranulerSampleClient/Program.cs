@@ -53,14 +53,14 @@ namespace GranulerSampleClient
 
             var builder = new ScheduleTaskGrainBuilder(client, MainTaskId);
             await builder
-            .AddPayload(typeof(TestClass), "Run", new object[] { "testInstance1" }, new object[] { DateTime.Now }, false)
+            .AddPayload(typeof(GenricTestClass<int,DateTime>), nameof(GenricTestClass<int, DateTime>.GenericReactiveRun), new object[] { 23,DateTime.Now }, isStatic: false, constructorGenericArguments: new[] { typeof(int), typeof(DateTime) })
             .AddOnScheduleTrigger(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1))
             .Trigger();
 
 
             var builder2 = new ScheduleTaskGrainBuilder(client, DependedTaskId);
             await builder2
-            .AddPayload(typeof(ReactiveTestClass), "ReactiveRun", new object[] { }, new object[] { DateTime.Now }, true)
+            .AddPayload(typeof(ReactiveTestClass), nameof(ReactiveTestClass.GenericReactiveRun), new object[] { }, new object[] { 1,DateTime.Now }, true, new[] { typeof(int), typeof(DateTime) })
             .AddOnSuccededTrigger(MainTaskId)
             .Trigger();
 

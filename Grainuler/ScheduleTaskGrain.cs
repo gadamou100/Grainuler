@@ -210,6 +210,29 @@ namespace Grainuler
             await ConfirmEvents();
             await _stream.OnNextAsync(@event);
         }
+
+        private async Task RaiseRetryEvent(ushort currentRetry, DateTime startTime, DateTime endTime, string triggerId, Exception exception)
+
+        {
+            this.GetPrimaryKey(out var key);
+            var @event = new TaskRetriedEvent
+            {
+                TaskId = key,
+                EndTime = endTime,
+                StartTime = startTime,
+                ExecutionNumber = State.ExecutionNumber + 1,
+                RetriesNumber = currentRetry,
+                InitiationParameter = State.InitiationParameter,
+                TriggerId = triggerId,
+                Exception = exception,
+                CurrentRetry = currentRetry
+            };
+            var taskRetriedException = new TaskRetriedException(@event);
+            base.RaiseEvent(@event);
+            await ConfirmEvents();
+            await _stream.OnErrorAsync(taskRetriedException);
+        }
+
         private async Task RaiseFailureEvent(ushort retryNumber, DateTime startTime, DateTime endTime, string triggerId, List<(Exception Exception, DateTime Occurence)> exceptions)
 
         {
@@ -240,8 +263,14 @@ namespace Grainuler
         {
             if(ex is TaskFailedException failedException)
             {
-                var trigger = _reactiveTriggers.GetValueOrDefault($"Task_Failed_{failedException.Event.TaskId}");
+                var trigger = _reactiveTriggers.GetValueOrDefault($"{TaskFailedTrigger.TriggerPrefix}{failedException.Event.TaskId}");
                 if(trigger != default)
+                    await Execute(trigger);
+            }
+            if (ex is TaskRetriedException retryException)
+            {
+                var trigger = _reactiveTriggers.GetValueOrDefault($"{TaskRetryTrigger.TriggerPrefix}{retryException.Event.TaskId}") as TaskRetryTrigger;
+                if (trigger != default && retryException.Event.CurrentRetry >= trigger.FromRetry && retryException.Event.CurrentRetry <= trigger.ToRetry)
                     await Execute(trigger);
             }
         }

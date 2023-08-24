@@ -1,14 +1,15 @@
 ﻿namespace Grainuler.DataTransferObjects.Events
 {
-    public class TaskEvent
+    public record TaskEvent
     {
-        public string TaskId { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
-        public ushort RetriesNumber { get; set; }
-        public ulong ExecutionNumber { get; set; }
-        public ScheduleTaskGrainInitiationParameter InitiationParameter { get; set; }
-        public string TriggerId { get; set; }
+        public Guid Id { get; init; } = Guid.NewGuid();
+        public string TaskId { get; init; }
+        public string Message { get; init; } = string.Empty;
+        public DateTime StartTime { get; init; }
+        public DateTime EndTime { get; init; }
+        public ushort RetriesNumber { get; init; }
+        public ulong ExecutionNumber { get; init; }
+        public ScheduleTaskGrainInitiationParameter InitiationParameter { get; init; }
+        public string TriggerId { get; init; }
     }
 }

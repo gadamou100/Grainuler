@@ -1,4 +1,4 @@
 ﻿namespace Grainuler.DataTransferObjects.Events
 {
-    public class TaskSuccedEvent : TaskEvent { }
+    public record TaskSuccedEvent : TaskEvent { }
 }

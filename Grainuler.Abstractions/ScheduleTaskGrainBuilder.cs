@@ -20,22 +20,28 @@ namespace Grainuler.Abstractions
             _scheduleTaskGrainConstructorParameter = new ScheduleTaskGrainInitiationParameter();
         }
 
-        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] constructorArguments, object[] methodArguments, bool isStatic)
+        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] constructorArguments=null, object[]? methodArguments=null, bool isStatic=false, Type[]? genericArguments=null, Type[]? constructorGenericArguments = null)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
                 AssemblyName = type.Assembly.FullName ?? string.Empty,
                 AssemblyPath = type.Assembly.Location ?? string.Empty,
                 ClassName = type.Name,
-                MethodName = methodName,
-                MethodArguments = methodArguments,
-                ConstructorArguments = constructorArguments,
-                IsStatic = isStatic
+                MethodName = methodName ,
+                MethodArguments = methodArguments ?? Array.Empty<object>(),
+                ConstructorArguments = constructorArguments ?? Array.Empty<object>(),
+                IsStatic = isStatic,
+                GenericMethodArguments = GetGenericArguments(genericArguments),
+                ConstructorGenericMethodArguments = GetGenericArguments(constructorGenericArguments)
+
+
             };
             return this;
         }
 
-        public IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[] constructorArguments, object[] methodArguments, bool isStatic)
+      
+
+        public IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[]? constructorArguments=null, object[]? methodArguments=null, bool isStatic=false,  Type[]? genericArguments = null, Type[]? constructorGenericArguments = null)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
@@ -43,13 +49,26 @@ namespace Grainuler.Abstractions
                 AssemblyPath = assemblyPath ?? string.Empty,
                 ClassName = className,
                 MethodName = methodName,
-                MethodArguments = methodArguments,
-                ConstructorArguments = constructorArguments,
-                IsStatic = isStatic
+                MethodArguments = methodArguments ?? Array.Empty<object>(),
+                ConstructorArguments = constructorArguments ?? Array.Empty<object>(),
+                IsStatic = isStatic,
+                GenericMethodArguments = GetGenericArguments(genericArguments),
+                ConstructorGenericMethodArguments = GetGenericArguments(constructorGenericArguments)
             };
             return this;
         }
 
+        private GenericArgument[] GetGenericArguments(Type[] genericArguments)
+        {
+            if (genericArguments == null || !genericArguments.Any())
+                return Array.Empty<GenericArgument>();
+            var result = new GenericArgument[genericArguments.Length];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = new GenericArgument(genericArguments[i].FullName, genericArguments[i].Assembly.FullName);
+            }
+            return result;
+        }
 
         public IScheduleTaskGrainBuilder AddOnScheduleTrigger(TimeSpan triggerTimeSpan, TimeSpan repeatTimeSpan, bool isExpnentailBackoffRetry = false, ushort maxRetryNumber = 3, TimeSpan? maxRetryPeriod = null, TimeSpan? waitTimeWithinRetries = null, TimeSpan? expireTimeSpan = null, DateTime? expiredDate = null)
         {

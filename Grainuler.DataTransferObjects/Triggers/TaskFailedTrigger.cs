@@ -2,8 +2,8 @@
 {
     public class TaskFailedTrigger : ReactiveTrigger
     {
-
-        public override string TriggerId => $"Task_Failed_{TaskId}";
+        public const string TriggerPrefix = "Task_Failed_";
+        public override string TriggerId => $"{TriggerPrefix}{TaskId}";
     }
 
 }

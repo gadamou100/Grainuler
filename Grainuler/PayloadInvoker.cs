@@ -36,17 +36,21 @@ namespace Grainuler
             var invokeClass = LoadInvokeClassFromAssembly(payload);
             if (invokeClass.HasNoValue)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
-
-            var currInsance = Activator.CreateInstance(invokeClass.Value, payload.ConstructorArguments);
+            var instanceType = invokeClass.Value.IsGenericType 
+                ? invokeClass.Value.MakeGenericType(GetGenericTypes(payload.ConstructorGenericMethodArguments)) 
+                : invokeClass.Value;
+            var currInsance = Activator.CreateInstance(instanceType, payload.ConstructorArguments);
             if (currInsance == null)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
             var method = currInsance.GetType().GetMethod(payload.MethodName);
             if (method == null)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
+            method = MakeMethodGenericIfThereAreGenericArguments(payload, method);
             return (method, currInsance);
 
 
         }
+
         private static Maybe<(MethodInfo methodInfo, object? instance)> LoadStatic(Payload payload)
         {
 
@@ -56,10 +60,30 @@ namespace Grainuler
             var method = invokeClass.Value.GetMethod(payload.MethodName);
             if (method == null)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
+            method = MakeMethodGenericIfThereAreGenericArguments(payload, method);
             return (method, null);
-
-
         }
+
+        private static MethodInfo MakeMethodGenericIfThereAreGenericArguments(Payload payload, MethodInfo? method)
+        {
+            if (payload.GenericMethodArguments != null && payload.GenericMethodArguments.Any())
+            {
+                Type[] types = GetGenericTypes(payload.GenericMethodArguments);
+                return method.MakeGenericMethod(types);
+
+            }
+            return method;
+        }
+        private static Type[] GetGenericTypes(GenericArgument[] genericMethodArguments)
+        {
+            var result = new Type[genericMethodArguments.Length];
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = Type.GetType($"{genericMethodArguments[i].TypeFullName}, {genericMethodArguments[i].TypeAssembly}");
+            }
+            return result;
+        }
+
         private static Maybe<Type> LoadInvokeClassFromAssembly(Payload payload)
         {
             var assembly = Assembly.LoadFile(payload.AssemblyPath);
