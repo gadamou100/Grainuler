@@ -32,8 +32,8 @@ namespace Grainuler.Tests
             Assert.Equal(type.Name, parameter.Payload.ClassName);
             Assert.Equal(methodName, parameter.Payload.MethodName);
             Assert.False(parameter.Payload.IsStatic);
-            Assert.True(constructorAruments.SequenceEqual(parameter.Payload.ConstructorArguments));
-            Assert.True(methoAruments.SequenceEqual(parameter.Payload.MethodArguments));
+            Assert.True(constructorAruments.SequenceEqual(parameter.Payload.ConstructorParameters));
+            Assert.True(methoAruments.SequenceEqual(parameter.Payload.MethodParameters));
         }
 
         [Fact]
@@ -54,8 +54,8 @@ namespace Grainuler.Tests
             Assert.Equal(type.Name, parameter.Payload.ClassName);
             Assert.Equal(methodName, parameter.Payload.MethodName);
             Assert.False(parameter.Payload.IsStatic);
-            Assert.True(constructorAruments.SequenceEqual(parameter.Payload.ConstructorArguments));
-            Assert.True(methoAruments.SequenceEqual(parameter.Payload.MethodArguments));
+            Assert.True(constructorAruments.SequenceEqual(parameter.Payload.ConstructorParameters));
+            Assert.True(methoAruments.SequenceEqual(parameter.Payload.MethodParameters));
         }
 
         [Fact]

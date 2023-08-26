@@ -133,12 +133,12 @@ namespace Grainuler
             var waitTime = trigger.WaitTimeWithinRetries;
             bool isCurrentExecutionAttempSuccess=false;
             var exceptions = new List<(Exception Exception, DateTime Occurence)>();
-
             do
             {
                 try
                 {
-
+                    if(currentRetry >0)
+                        await RaiseRetryEvent(currentRetry,startExecutionTime,DateTime.UtcNow,trigger.TriggerId,exceptions.LastOrDefault().Exception);
                     Trace.WriteLine($"Executing at {DateTime.Now}");
                     var result = await _payloadInvoker.Invoke(_payload);
                     isCurrentExecutionAttempSuccess = true;
@@ -148,6 +148,7 @@ namespace Grainuler
                 }
                 catch (Exception e)
                 {
+                  
                     (bool retriesHaveBeenExhausted, currentRetry, waitTime) = await WaitForRetry(exceptions, e, retryUntil, currentRetry, trigger.MaxRetryNumber, trigger.IsExpnentailBackoffRetry, waitTime);
                     if (retriesHaveBeenExhausted)
                     {

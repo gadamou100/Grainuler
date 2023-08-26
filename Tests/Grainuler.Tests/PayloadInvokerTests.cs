@@ -16,7 +16,7 @@ namespace Grainuler.Tests
             var invoker = new PayloadInvoker();
             var payloadType = typeof(TestClass);
             var now = DateTime.Now;
-            var payload = new Payload { AssemblyName = payloadType.Assembly.FullName, AssemblyPath = payloadType.Assembly.Location, ClassName = payloadType.Name, IsStatic = false, ConstructorArguments = new object[] { "testInstance1" }, MethodArguments = new object[] { now }, MethodName = "Run" };
+            var payload = new Payload { AssemblyName = payloadType.Assembly.FullName, AssemblyPath = payloadType.Assembly.Location, ClassName = payloadType.Name, IsStatic = false, ConstructorParameters = new object[] { "testInstance1" }, MethodParameters = new object[] { now }, MethodName = "Run" };
             //Act
             var result = await invoker.Invoke(payload);
             //Assert
@@ -30,7 +30,7 @@ namespace Grainuler.Tests
             var invoker = new PayloadInvoker();
             var payloadType = typeof(ReactiveTestClass);
             var now = DateTime.Now;
-            var payload = new Payload { AssemblyName = payloadType.Assembly.FullName, AssemblyPath = payloadType.Assembly.Location, ClassName = payloadType.Name, IsStatic = true, MethodArguments = new object[] { now }, MethodName = "ReactiveRun" };
+            var payload = new Payload { AssemblyName = payloadType.Assembly.FullName, AssemblyPath = payloadType.Assembly.Location, ClassName = payloadType.Name, IsStatic = true, MethodParameters = new object[] { now }, MethodName = "ReactiveRun" };
             //Act
             var result = await invoker.Invoke(payload);
             //Assert
@@ -44,7 +44,7 @@ namespace Grainuler.Tests
             var invoker = new PayloadInvoker();
             var payloadType = typeof(TestClass);
             var now = DateTime.Now;
-            var payload = new Payload { AssemblyName = payloadType.Assembly.FullName, AssemblyPath = payloadType.Assembly.Location, ClassName = payloadType.Name, IsStatic = false, ConstructorArguments = new object[] { "testInstance1" }, MethodArguments = new object[] { now }, MethodName = "RunFail" };
+            var payload = new Payload { AssemblyName = payloadType.Assembly.FullName, AssemblyPath = payloadType.Assembly.Location, ClassName = payloadType.Name, IsStatic = false, ConstructorParameters = new object[] { "testInstance1" }, MethodParameters = new object[] { now }, MethodName = "RunFail" };
             //Act
             Task result() => invoker.Invoke(payload);
             //Assert

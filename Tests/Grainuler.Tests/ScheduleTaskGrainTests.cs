@@ -105,7 +105,6 @@ namespace Grainuler.Tests
                     }
                 }
             };
-
             var reactiveParameter = new ScheduleTaskGrainInitiationParameter
             {
                 Payload = GetPayload(reactiveTriggerFileName, reactiveTriggerFileContent),
@@ -155,9 +154,9 @@ namespace Grainuler.Tests
                 AssemblyName = typeof(TestWriteToDiskJob).Assembly.FullName,
                 AssemblyPath = typeof(TestWriteToDiskJob).Assembly.Location,
                 ClassName = nameof(TestWriteToDiskJob),
-                ConstructorArguments = new[] { fileName },
+                ConstructorParameters = new[] { fileName },
                 IsStatic = false,
-                MethodArguments = new[] { fileContent },
+                MethodParameters = new[] { fileContent },
                 MethodName = methodName
             };
         }

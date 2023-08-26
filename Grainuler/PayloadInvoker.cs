@@ -19,7 +19,7 @@ namespace Grainuler
                     if (invokable.HasValue)
                     {
                         //todo: after loading the invocable cache it to an object that implements IMemoryCache  interface, and try to retrieve it from there on next call.
-                        result = invokable.Value.methodInfo.Invoke(invokable.Value.instance, payload.MethodArguments);
+                        result = invokable.Value.methodInfo.Invoke(invokable.Value.instance, payload.MethodParameters);
                     }
                 }
                 catch (Exception e)
@@ -37,9 +37,9 @@ namespace Grainuler
             if (invokeClass.HasNoValue)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
             var instanceType = invokeClass.Value.IsGenericType 
-                ? invokeClass.Value.MakeGenericType(GetGenericTypes(payload.ConstructorGenericMethodArguments)) 
+                ? invokeClass.Value.MakeGenericType(GetGenericTypes(payload.ConstructorGenericArguments)) 
                 : invokeClass.Value;
-            var currInsance = Activator.CreateInstance(instanceType, payload.ConstructorArguments);
+            var currInsance = Activator.CreateInstance(instanceType, payload.ConstructorParameters);
             if (currInsance == null)
                 return Maybe<(MethodInfo methodInfo, object? instance)>.None;
             var method = currInsance.GetType().GetMethod(payload.MethodName);

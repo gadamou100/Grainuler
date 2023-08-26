@@ -33,6 +33,7 @@ namespace GranulerSampleClient
                 using (var client = await ConnectClient(config))
                 {
                     await InitateGrainuler(client);
+                    //await InitateGrainulerForTestingFailures(client);
                 }
                 Console.ReadLine();
                 return 0;
@@ -53,20 +54,49 @@ namespace GranulerSampleClient
 
             var builder = new ScheduleTaskGrainBuilder(client, MainTaskId);
             await builder
-            .AddPayload(typeof(GenricTestClass<int,DateTime>), nameof(GenricTestClass<int, DateTime>.GenericReactiveRun), new object[] { 23,DateTime.Now }, isStatic: false, constructorGenericArguments: new[] { typeof(int), typeof(DateTime) })
+                .AddPayloadType(typeof(GenricTestClass<int, DateTime>))
+                .AddPayloadMethod(nameof(GenricTestClass<int, DateTime>.GenericReactiveRun))
+                .AddConstructorParameters( 23, DateTime.Now )
+                .AddConstructorGenericArguments( typeof(int), typeof(DateTime) )
+                .AddOnScheduleTrigger(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1))
+                .Trigger();
+
+
+            var onSuccessbuilder = new ScheduleTaskGrainBuilder(client, DependedTaskId);
+            await onSuccessbuilder
+                .AddPayloadType(typeof(ReactiveTestClass))
+                .AddPayloadMethod(nameof(ReactiveTestClass.GenericReactiveRun))
+                .AddMethodParameters(1, DateTime.Now)
+                .AddMethodGenericArguments(typeof(int), typeof(DateTime))
+                .AddIsMethodStatic(true)
+                .AddOnSuccededTrigger(MainTaskId)
+                .Trigger();
+
+
+
+
+        }
+
+        private static async Task InitateGrainulerForTestingFailures(IClusterClient client)
+        {
+
+            var builderToTestFail = new ScheduleTaskGrainBuilder(client, MainTaskId);
+            await builderToTestFail
+            .AddPayload(typeof(TestClass), nameof(TestClass.RunFail), new object[] { "test failure"}, methodArguments: new object[] {DateTime.Now })
             .AddOnScheduleTrigger(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1))
             .Trigger();
 
-
-            var builder2 = new ScheduleTaskGrainBuilder(client, DependedTaskId);
-            await builder2
-            .AddPayload(typeof(ReactiveTestClass), nameof(ReactiveTestClass.GenericReactiveRun), new object[] { }, new object[] { 1,DateTime.Now }, true, new[] { typeof(int), typeof(DateTime) })
-            .AddOnSuccededTrigger(MainTaskId)
+            var onRetrybuilder = new ScheduleTaskGrainBuilder(client, DependedTaskId);
+            await onRetrybuilder
+            .AddPayload(typeof(ReactiveTestClass), nameof(ReactiveTestClass.GenericReactiveRun), new object[] { }, new object[] { 1, DateTime.Now }, true, new[] { typeof(int), typeof(DateTime) })
+            .AddOnRetryTrigger(MainTaskId, 2, 3)
             .Trigger();
 
-
-            //var obs = client.GetGrain<ITaskCompletedEventObserver>("1");
-            //await obs.SetSubscription(MainTaskId);
+            var onFailBuilder = new ScheduleTaskGrainBuilder(client, DependedTaskId);
+            await onFailBuilder
+            .AddPayload(typeof(ReactiveTestClass), nameof(ReactiveTestClass.GenericReactiveRun), new object[] { }, new object[] { 1, DateTime.Now }, true, new[] { typeof(int), typeof(DateTime) })
+            .AddOnFailureTrigger(MainTaskId)
+            .Trigger();
 
         }
         private static async Task<IClusterClient> ConnectClient(IConfiguration configuration)
