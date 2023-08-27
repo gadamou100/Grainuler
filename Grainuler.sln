@@ -19,11 +19,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleTestJobs", "..\Sample
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{51FF5DFD-DC08-4072-A8ED-E0259333E5DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grainuler.Tests", "Tests\Grainuler.Tests\Grainuler.Tests.csproj", "{E1114B40-499C-4B51-8D5E-03778CB7832A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grainuler.Tests", "Tests\Grainuler.Tests\Grainuler.Tests.csproj", "{E1114B40-499C-4B51-8D5E-03778CB7832A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grainuler.RedisHosting", "Grainuler.RedisHosting\Grainuler.RedisHosting.csproj", "{881F899B-0404-4CAB-97D3-0D1CEC91B3B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grainuler.RedisHosting", "Grainuler.RedisHosting\Grainuler.RedisHosting.csproj", "{881F899B-0404-4CAB-97D3-0D1CEC91B3B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Grainuler.Configuration", "Grainuler.Configuration\Grainuler.Configuration.csproj", "{D61F8631-D56B-42BE-AA28-03C3797AF66B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grainuler.Configuration", "Grainuler.Configuration\Grainuler.Configuration.csproj", "{D61F8631-D56B-42BE-AA28-03C3797AF66B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "IntegrationTests", "IntegrationTests", "{BBDB6CDA-2DCF-418C-A42A-F5A4F272B620}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,6 +78,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{C0407EF1-B029-4909-A785-1A52A31FB3C5} = {BBDB6CDA-2DCF-418C-A42A-F5A4F272B620}
+		{7615E7B9-068D-4903-BC56-F2A30B885D1E} = {BBDB6CDA-2DCF-418C-A42A-F5A4F272B620}
+		{E2A8076F-6ED7-4894-B764-BB16064F3DC5} = {BBDB6CDA-2DCF-418C-A42A-F5A4F272B620}
 		{E1114B40-499C-4B51-8D5E-03778CB7832A} = {51FF5DFD-DC08-4072-A8ED-E0259333E5DF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

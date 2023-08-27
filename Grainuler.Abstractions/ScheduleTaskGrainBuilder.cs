@@ -94,7 +94,7 @@ namespace Grainuler.Abstractions
             {
                 TriggerTime = triggerTimeSpan,
                 RepeatTime = repeatTimeSpan,
-                IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
+                IsExpnentialBackoffRetry = isExpnentailBackoffRetry,
                 MaxRetryNumber = maxRetryNumber,
                 MaxRetryPeriod = maxRetryPeriod.Value,
                 WaitTimeWithinRetries = waitTimeWithinRetries.Value,
@@ -114,7 +114,7 @@ namespace Grainuler.Abstractions
             var trigger = new TaskSuccededTrigger
             {
                 TaskId = taskId,
-                IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
+                IsExpnentialBackoffRetry = isExpnentailBackoffRetry,
                 MaxRetryNumber = maxRetryNumber,
                 MaxRetryPeriod = maxRetryPeriod.Value,
                 WaitTimeWithinRetries = waitTimeWithinRetries.Value,
@@ -135,7 +135,7 @@ namespace Grainuler.Abstractions
             var trigger = new TaskFailedTrigger
             {
                 TaskId = taskId,
-                IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
+                IsExpnentialBackoffRetry = isExpnentailBackoffRetry,
                 MaxRetryNumber = maxRetryNumber,
                 MaxRetryPeriod = maxRetryPeriod.Value,
                 WaitTimeWithinRetries = waitTimeWithinRetries.Value,
@@ -157,7 +157,7 @@ namespace Grainuler.Abstractions
                 TaskId = taskId,
                 FromRetry = fromRetry,
                 ToRetry = toRetry,
-                IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
+                IsExpnentialBackoffRetry = isExpnentailBackoffRetry,
                 MaxRetryNumber = maxRetryNumber,
                 MaxRetryPeriod = maxRetryPeriod.Value,
                 WaitTimeWithinRetries = waitTimeWithinRetries.Value,
@@ -300,7 +300,7 @@ namespace Grainuler.Abstractions
         public IScheduleTaskGrainBuilder AddIsExponentialBackoffRetry(bool value)
         {
             Trigger? latestTrigger = EnsureTrigggerExists();
-            latestTrigger.IsExpnentailBackoffRetry = value;
+            latestTrigger.IsExpnentialBackoffRetry = value;
             return this;
         }
         private Trigger EnsureTrigggerExists()

@@ -78,7 +78,7 @@ namespace Grainuler.Tests
 
             Assert.Equal(triggerTimeSpan, trigger.TriggerTime);
             Assert.Equal(repeatTimeSpan, trigger.RepeatTime);
-            Assert.Equal(isExpnentailBackoffRetry, trigger.IsExpnentailBackoffRetry);
+            Assert.Equal(isExpnentailBackoffRetry, trigger.IsExpnentialBackoffRetry);
             Assert.Equal(maxRetryNumber, trigger.MaxRetryNumber);
             Assert.Equal(maxRetryPeriod, trigger.MaxRetryPeriod);
             Assert.Equal(waitTimeWithinRetries, trigger.WaitTimeWithinRetries);
@@ -105,7 +105,7 @@ namespace Grainuler.Tests
             var trigger = builder.ScheduleTaskGrainConstructorParameter.Triggers.FirstOrDefault() as ReactiveTrigger;
 
             Assert.Equal(taskId, trigger.TaskId);
-            Assert.Equal(isExpnentailBackoffRetry, trigger.IsExpnentailBackoffRetry);
+            Assert.Equal(isExpnentailBackoffRetry, trigger.IsExpnentialBackoffRetry);
             Assert.Equal(maxRetryNumber, trigger.MaxRetryNumber);
             Assert.Equal(maxRetryPeriod, trigger.MaxRetryPeriod);
             Assert.Equal(waitTimeWithinRetries, trigger.WaitTimeWithinRetries);
@@ -131,7 +131,7 @@ namespace Grainuler.Tests
             var trigger = builder.ScheduleTaskGrainConstructorParameter.Triggers.FirstOrDefault() as ReactiveTrigger;
 
             Assert.Equal(taskId, trigger.TaskId);
-            Assert.Equal(isExpnentailBackoffRetry, trigger.IsExpnentailBackoffRetry);
+            Assert.Equal(isExpnentailBackoffRetry, trigger.IsExpnentialBackoffRetry);
             Assert.Equal(maxRetryNumber, trigger.MaxRetryNumber);
             Assert.Equal(maxRetryPeriod, trigger.MaxRetryPeriod);
             Assert.Equal(waitTimeWithinRetries, trigger.WaitTimeWithinRetries);

@@ -149,7 +149,7 @@ namespace Grainuler
                 catch (Exception e)
                 {
                   
-                    (bool retriesHaveBeenExhausted, currentRetry, waitTime) = await WaitForRetry(exceptions, e, retryUntil, currentRetry, trigger.MaxRetryNumber, trigger.IsExpnentailBackoffRetry, waitTime);
+                    (bool retriesHaveBeenExhausted, currentRetry, waitTime) = await WaitForRetry(exceptions, e, retryUntil, currentRetry, trigger.MaxRetryNumber, trigger.IsExpnentialBackoffRetry, waitTime);
                     if (retriesHaveBeenExhausted)
                     {
                         Trace.WriteLine($"Execution failed at {DateTime.Now} after {currentRetry} number of retries");
