@@ -17,7 +17,7 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleTestJobs", "..\SampleTestJobs\SampleTestJobs.csproj", "{E2A8076F-6ED7-4894-B764-BB16064F3DC5}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{51FF5DFD-DC08-4072-A8ED-E0259333E5DF}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTests", "UnitTests", "{51FF5DFD-DC08-4072-A8ED-E0259333E5DF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Grainuler.Tests", "Tests\Grainuler.Tests\Grainuler.Tests.csproj", "{E1114B40-499C-4B51-8D5E-03778CB7832A}"
 EndProject
