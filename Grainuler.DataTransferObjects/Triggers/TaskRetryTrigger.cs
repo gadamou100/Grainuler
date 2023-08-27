@@ -12,5 +12,16 @@ namespace Grainuler.DataTransferObjects.Triggers
         public ushort FromRetry { get; set; } = 1;
         public ushort ToRetry { get; set; }=ushort.MaxValue;
         public override string TriggerId => $"{TriggerPrefix}{TaskId}";
+
+
+        public TaskRetryTrigger()
+        {
+
+        }
+        public TaskRetryTrigger(string taskId,ushort fromRetry, ushort toRetry) : base(taskId)
+        {
+            FromRetry = fromRetry;
+            ToRetry = toRetry;
+        }
     }
 }

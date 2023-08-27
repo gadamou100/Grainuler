@@ -58,7 +58,8 @@ namespace GranulerSampleClient
                 .AddPayloadMethod(nameof(GenricTestClass<int, DateTime>.GenericReactiveRun))
                 .AddConstructorParameters( 23, DateTime.Now )
                 .AddConstructorGenericArguments( typeof(int), typeof(DateTime) )
-                .AddOnScheduleTrigger(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1))
+                .AddOnScheduleTriggerSubscription(TimeSpan.FromSeconds(10), TimeSpan.FromMinutes(1))
+                .AddExpireTimespan(TimeSpan.FromDays(1))
                 .Trigger();
 
 
@@ -69,7 +70,9 @@ namespace GranulerSampleClient
                 .AddMethodParameters(1, DateTime.Now)
                 .AddMethodGenericArguments(typeof(int), typeof(DateTime))
                 .AddIsMethodStatic(true)
-                .AddOnSuccededTrigger(MainTaskId)
+                .AddOnSuccededTriggerSubscription(MainTaskId)
+                .AddMaxRetryNumber(4)
+                .AddWaitTimeWithinRetries(TimeSpan.FromSeconds(5))
                 .Trigger();
 
 

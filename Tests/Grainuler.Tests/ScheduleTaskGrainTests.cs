@@ -110,7 +110,7 @@ namespace Grainuler.Tests
                 Payload = GetPayload(reactiveTriggerFileName, reactiveTriggerFileContent),
                 Triggers = new[]
                {
-                    new TaskCompletedTrigger
+                    new TaskSuccededTrigger
                     {
                        TaskId ="test_job"
                     }

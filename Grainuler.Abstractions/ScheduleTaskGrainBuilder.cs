@@ -1,10 +1,11 @@
 ﻿using Grainuler.DataTransferObjects;
+using Grainuler.DataTransferObjects.Exceptions;
 using Grainuler.DataTransferObjects.Triggers;
 using Orleans;
 
 namespace Grainuler.Abstractions
 {
-    public class ScheduleTaskGrainBuilder : IPayloadedScheduleTaskGrainBuilder
+    public class ScheduleTaskGrainBuilder : IScheduleTaskGrainBuilder
     {
         private readonly ScheduleTaskGrainInitiationParameter _scheduleTaskGrainConstructorParameter;
         private readonly string _taskName;
@@ -20,7 +21,20 @@ namespace Grainuler.Abstractions
             _scheduleTaskGrainConstructorParameter = new ScheduleTaskGrainInitiationParameter();
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] constructorArguments=null, object[]? methodArguments=null, bool isStatic=false, Type[]? genericArguments=null, Type[]? constructorGenericArguments = null)
+        public IScheduleTaskGrainBuilder AddPayload(Payload payload)
+        {
+            _scheduleTaskGrainConstructorParameter.Payload = payload;
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddTrigger(Trigger trigger)
+        {
+            _scheduleTaskGrainConstructorParameter.Triggers ??= new List<Trigger>();
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(trigger);
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddPayload(Type type, string methodName, object[] constructorArguments=null, object[]? methodArguments=null, bool isStatic=false, Type[]? genericArguments=null, Type[]? constructorGenericArguments = null)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
@@ -41,7 +55,7 @@ namespace Grainuler.Abstractions
 
       
 
-        public IPayloadedScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[]? constructorParameters=null, object[]? methodParameters=null, bool isStatic=false,  Type[]? genericArguments = null, Type[]? constructorGenericArguments = null)
+        public IScheduleTaskGrainBuilder AddPayload(string assemblyName, string assemblyPath, string className, string methodName, object[]? constructorParameters=null, object[]? methodParameters=null, bool isStatic=false,  Type[]? genericArguments = null, Type[]? constructorGenericArguments = null)
         {
             _scheduleTaskGrainConstructorParameter.Payload = new Payload
             {
@@ -97,7 +111,7 @@ namespace Grainuler.Abstractions
             waitTimeWithinRetries ??= TimeSpan.FromSeconds(10);
             expiredDate ??= DateTime.MaxValue;
             expireTimeSpan ??= TimeSpan.MaxValue;
-            var trigger = new TaskCompletedTrigger
+            var trigger = new TaskSuccededTrigger
             {
                 TaskId = taskId,
                 IsExpnentailBackoffRetry = isExpnentailBackoffRetry,
@@ -162,7 +176,7 @@ namespace Grainuler.Abstractions
             return Task.FromResult(this as IScheduleTaskGrainBuilder);
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddPayloadType(Type type)
+        public IScheduleTaskGrainBuilder AddPayloadType(Type type)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.AssemblyName = type.Assembly.FullName ?? string.Empty;
@@ -174,28 +188,28 @@ namespace Grainuler.Abstractions
 
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddPayloadMethod(string methodName)
+        public IScheduleTaskGrainBuilder AddPayloadMethod(string methodName)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.MethodName = methodName;
             return this;
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddConstructorParameters(params object[] constructorParameters)
+        public IScheduleTaskGrainBuilder AddConstructorParameters(params object[] constructorParameters)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.ConstructorParameters = constructorParameters;
             return this;
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddMethodParameters(params object[] methodParameters)
+        public IScheduleTaskGrainBuilder AddMethodParameters(params object[] methodParameters)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.MethodParameters = methodParameters;
             return this;
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddConstructorGenericArguments(params Type[]? constructorGenericArguments)
+        public IScheduleTaskGrainBuilder AddConstructorGenericArguments(params Type[]? constructorGenericArguments)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.ConstructorGenericArguments = GetGenericArguments(constructorGenericArguments);
@@ -203,18 +217,99 @@ namespace Grainuler.Abstractions
             return this;
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddMethodGenericArguments(params Type[]? methodGenericArguments)
+        public IScheduleTaskGrainBuilder AddMethodGenericArguments(params Type[]? methodGenericArguments)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.GenericMethodArguments = GetGenericArguments(methodGenericArguments);
             return this;
         }
 
-        public IPayloadedScheduleTaskGrainBuilder AddIsMethodStatic(bool value)
+        public IScheduleTaskGrainBuilder AddIsMethodStatic(bool value)
         {
             _scheduleTaskGrainConstructorParameter.Payload ??= new Payload();
             _scheduleTaskGrainConstructorParameter.Payload.IsStatic = value;
             return this;
         }
+
+      
+
+        public IScheduleTaskGrainBuilder AddOnScheduleTriggerSubscription(TimeSpan triggerTimeSpan, TimeSpan repeatTimeSpan)
+        {
+            _scheduleTaskGrainConstructorParameter.Triggers ??= new List<Trigger>();
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(new ScheduleTrigger(triggerTimeSpan, repeatTimeSpan));
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddOnSuccededTriggerSubscription(string taskId)
+        {
+            _scheduleTaskGrainConstructorParameter.Triggers ??= new List<Trigger>();
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(new TaskSuccededTrigger(taskId));
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddOnFailureTriggerSubscription(string taskId)
+        {
+            _scheduleTaskGrainConstructorParameter.Triggers ??= new List<Trigger>();
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(new TaskFailedTrigger(taskId));
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddOnRetryTriggerSubscription(string taskId, ushort fromRetry = ushort.MinValue, ushort toRetry = ushort.MaxValue)
+        {
+            _scheduleTaskGrainConstructorParameter.Triggers ??= new List<Trigger>();
+            _scheduleTaskGrainConstructorParameter.Triggers.Add(new TaskRetryTrigger(taskId,fromRetry,toRetry));
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddMaxRetryNumber(ushort maxRetryNumber)
+        {
+            Trigger? latestTrigger = EnsureTrigggerExists();
+            latestTrigger.MaxRetryNumber = maxRetryNumber;
+            return this;
+        }
+
+    
+        public IScheduleTaskGrainBuilder AddMaxRetryPeriod(TimeSpan maxRetryPeriod)
+        {
+            Trigger? latestTrigger = EnsureTrigggerExists();
+            latestTrigger.MaxRetryPeriod = maxRetryPeriod;
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddWaitTimeWithinRetries(TimeSpan waitTimeWithinRetries)
+        {
+            Trigger? latestTrigger = EnsureTrigggerExists();
+            latestTrigger.WaitTimeWithinRetries = waitTimeWithinRetries;
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddExpireTimespan(TimeSpan expireTimespan)
+        {
+            Trigger? latestTrigger = EnsureTrigggerExists();
+            latestTrigger.ExpireTimeSpan = expireTimespan;
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddExpireDate(DateTime expireDate)
+        {
+            Trigger? latestTrigger = EnsureTrigggerExists();
+            latestTrigger.ExpireDate = expireDate;
+            return this;
+        }
+
+        public IScheduleTaskGrainBuilder AddIsExponentialBackoffRetry(bool value)
+        {
+            Trigger? latestTrigger = EnsureTrigggerExists();
+            latestTrigger.IsExpnentailBackoffRetry = value;
+            return this;
+        }
+        private Trigger EnsureTrigggerExists()
+        {
+            var latestTrigger = _scheduleTaskGrainConstructorParameter.Triggers.LastOrDefault();
+            if (latestTrigger == null)
+                throw new TriggerNotFoundException();
+            return latestTrigger;
+        }
+
     }
 }
