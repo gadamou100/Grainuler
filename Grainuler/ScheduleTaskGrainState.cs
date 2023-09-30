@@ -1,6 +1,8 @@
 ﻿using Grainuler.Abstractions;
 using Grainuler.DataTransferObjects;
+using Grainuler.DataTransferObjects.Enums;
 using Grainuler.DataTransferObjects.Events;
+using TaskStatus = Grainuler.DataTransferObjects.Enums.TaskStatus;
 
 namespace Grainuler
 {
@@ -15,6 +17,7 @@ namespace Grainuler
         public string TriggerId { get; set; }
         public Guid? StreamId { get; set; }
         public ScheduleTaskGrainInitiationParameter InitiationParameter { get; set; }
+        public TaskStatus CurrentStatus { get; set; }
 
         public void Apply(TaskSuccedEvent @event)
         {

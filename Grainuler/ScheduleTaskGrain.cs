@@ -2,6 +2,7 @@
 using Grainuler.DataTransferObjects;
 using Grainuler.DataTransferObjects.Events;
 using Grainuler.DataTransferObjects.Exceptions;
+using Grainuler.DataTransferObjects.ExtensionMethods;
 using Grainuler.DataTransferObjects.Triggers;
 using Orleans;
 using Orleans.EventSourcing;
@@ -17,6 +18,8 @@ namespace Grainuler
     {
         
         private IAsyncStream<TaskEvent> _stream;
+        private IAsyncStream<TaskEvent> _managerStream;
+
         private readonly IPayloadInvoker _payloadInvoker;
         private  Payload _payload;
         private Dictionary<string,ReactiveTrigger> _reactiveTriggers;
@@ -43,6 +46,7 @@ namespace Grainuler
                 streamId = Guid.NewGuid();
             
             _stream = streamProvider.GetStream<TaskEvent>(streamId.Value, "default");
+            _managerStream = streamProvider.GetStream<TaskEvent>(Guid.Empty,"default");
             await InitiateReactivedTriggers();
             await  base.OnActivateAsync();
         }
@@ -81,7 +85,7 @@ namespace Grainuler
             foreach (var trigger in triggers.Values)
             {
                 if (trigger is ScheduleTrigger scheduleTrigger)
-                    await RegisterScheduleTrigger(key, scheduleTrigger, scheduleTrigger);
+                    await RegisterScheduleTrigger(key, scheduleTrigger);
                 else if (trigger is ReactiveTrigger reactiveTrigger )
                 {
                     if (reactiveTrigger.TaskId != key && !_reactiveTriggers.ContainsKey(reactiveTrigger.TriggerId))
@@ -94,17 +98,19 @@ namespace Grainuler
             }   
         }
 
-        private async Task RegisterScheduleTrigger(string? key, ScheduleTrigger trigger, ScheduleTrigger scheduleTrigger)
+        private async Task RegisterScheduleTrigger(string? key, ScheduleTrigger trigger)
         {
             string reminderName = $"Schedule_{key}_{trigger.TriggerId}";
             var grainReminder = await RegisterOrUpdateReminder(
           reminderName,
-          scheduleTrigger.TriggerTime,
+          trigger.TriggerTime,
           trigger.RepeatTime);
             if (_grainReminders.ContainsKey(reminderName))
                 _grainReminders[reminderName] = (grainReminder, trigger);
             else
                 _grainReminders.Add(reminderName, (grainReminder, trigger));
+
+            await RaiseTaskRegisteredEvent(trigger.TriggerId);
         }
 
 
@@ -112,24 +118,42 @@ namespace Grainuler
         {
             if(_grainReminders.TryGetValue(reminderName,out var grainReminder))
             {
-                if (HasReminderExpire(grainReminder.Trigger))
-                        await UnregisterReminder(grainReminder.Reminder);
+                if (grainReminder.Trigger.HasExpired())
+                {
+                    await UnregisterReminder(grainReminder.Reminder);
+                    await RaiseTriggerExpiredEvent(grainReminder.Trigger.TriggerId);
+
+
+                    if (HaveAllRemindersExpired())
+                        await RaiseTaskExpiredEvent();
+
+                }
                 else
+                {
+                    await RaiseTaskStartedEvent(grainReminder.Trigger.TriggerId);
                     await Execute(grainReminder.Trigger);
+                }
             }
            
 
         }
 
-        private bool HasReminderExpire(Trigger trigger)
+        private bool HaveAllRemindersExpired()
         {
-            return GetDateFromTimespanAddition(trigger.ExpireTimeSpan) < DateTime.UtcNow || trigger.ExpireDate < DateTime.UtcNow;
+            foreach (var item in _grainReminders)
+            {
+                if(!item.Value.Trigger.HasExpired())
+                    return false;
+            }
+            return true;
         }
+
+      
         private async Task Execute(Trigger trigger)
         {
             ushort currentRetry = 0;
             var startExecutionTime = DateTime.UtcNow;
-            var retryUntil = GetDateFromTimespanAddition(trigger.MaxRetryPeriod);
+            var retryUntil = trigger.MaxRetryPeriod.GetDateFromTimespanAddition();
             var waitTime = trigger.WaitTimeWithinRetries;
             bool isCurrentExecutionAttempSuccess=false;
             var exceptions = new List<(Exception Exception, DateTime Occurence)>();
@@ -179,25 +203,96 @@ namespace Grainuler
             return (false,currentRetry,waitTime);
 
         }
-        private static DateTime GetDateFromTimespanAddition(TimeSpan timeSpan)
-        {
-            try
-            {
-                if(timeSpan == TimeSpan.MaxValue)
-                    return DateTime.MaxValue;
-                var result = DateTime.UtcNow.Add(timeSpan);
-                return result;
-            }
-            catch
-            {
 
-                return DateTime.MaxValue;
-            }
+        private async Task RaiseTaskRegisteredEvent(string triggerId)
+        {
+            this.GetPrimaryKey(out var key);
+            var now = DateTime.UtcNow;
+            var @event = new TaskRegisteredEvent
+            {
+                TaskId = key,
+                EndTime = now,
+                StartTime = now,
+                InitiationParameter = State.InitiationParameter,
+                TriggerId = triggerId
+            };
+            base.RaiseEvent(@event);
+            await ConfirmEvents();
+            State.CurrentStatus = DataTransferObjects.Enums.TaskStatus.Registered;
+            Task publishObserversTask = _stream.OnNextAsync(@event);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
+
         }
+
+        private async Task RaiseTaskStartedEvent(string triggerId)
+        {
+            this.GetPrimaryKey(out var key);
+            var now = DateTime.UtcNow;
+            var @event = new TaskStartedEvent
+            {
+                TaskId = key,
+                EndTime = now,
+                StartTime = now,
+                InitiationParameter = State.InitiationParameter,
+                TriggerId = triggerId
+            };
+            base.RaiseEvent(@event);
+            await ConfirmEvents();
+            State.CurrentStatus = DataTransferObjects.Enums.TaskStatus.Started;
+            Task publishObserversTask = _stream.OnNextAsync(@event);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
+        }
+
+        private async Task RaiseTriggerExpiredEvent(string triggerId)
+        {
+            this.GetPrimaryKey(out var key);
+            var now = DateTime.UtcNow;
+            var @event = new TriggerExpiredEvent
+            {
+                TaskId = key,
+                EndTime = now,
+                StartTime = now,
+                InitiationParameter = State.InitiationParameter,
+                TriggerId = triggerId
+            };
+            base.RaiseEvent(@event);
+            await ConfirmEvents();
+            Task publishObserversTask = _stream.OnNextAsync(@event);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
+
+        }
+        private async Task RaiseTaskExpiredEvent()
+        {
+            this.GetPrimaryKey(out var key);
+            var now = DateTime.UtcNow;
+            var @event = new TriggerExpiredEvent
+            {
+                TaskId = key,
+                EndTime = now,
+                StartTime = now,
+                InitiationParameter = State.InitiationParameter,
+            };
+            base.RaiseEvent(@event);
+            await ConfirmEvents();
+            State.CurrentStatus = DataTransferObjects.Enums.TaskStatus.Expired;
+            Task publishObserversTask = _stream.OnNextAsync(@event);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
+
+        }
+
+
         private async Task RaiseSuccedEvent(ushort retryNumber, DateTime startTime, DateTime endTime, string triggerId) 
         {
             this.GetPrimaryKey(out var key);
-            var @event = new TaskEvent
+            var @event = new TaskSuccedEvent
             {
                 TaskId =  key,
                 EndTime = endTime,
@@ -209,7 +304,11 @@ namespace Grainuler
             };
             base.RaiseEvent(@event);
             await ConfirmEvents();
-            await _stream.OnNextAsync(@event);
+            State.CurrentStatus = DataTransferObjects.Enums.TaskStatus.Succeded;
+            Task publishObserversTask = _stream.OnNextAsync(@event);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
         }
 
         private async Task RaiseRetryEvent(ushort currentRetry, DateTime startTime, DateTime endTime, string triggerId, Exception exception)
@@ -231,7 +330,11 @@ namespace Grainuler
             var taskRetriedException = new TaskRetriedException(@event);
             base.RaiseEvent(@event);
             await ConfirmEvents();
-            await _stream.OnErrorAsync(taskRetriedException);
+            State.CurrentStatus = DataTransferObjects.Enums.TaskStatus.Retried;
+            Task publishObserversTask = _stream.OnErrorAsync(taskRetriedException);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
         }
 
         private async Task RaiseFailureEvent(ushort retryNumber, DateTime startTime, DateTime endTime, string triggerId, List<(Exception Exception, DateTime Occurence)> exceptions)
@@ -252,7 +355,11 @@ namespace Grainuler
             var taskFailedException = new TaskFailedException(@event);
             base.RaiseEvent(@event);
             await ConfirmEvents();
-            await _stream.OnErrorAsync(taskFailedException);
+            State.CurrentStatus = DataTransferObjects.Enums.TaskStatus.Failed;
+            Task publishObserversTask = _stream.OnErrorAsync(taskFailedException);
+            Task publishManagerTask = _managerStream.OnNextAsync(@event);
+            await publishObserversTask;
+            await publishManagerTask;
         }
 
         public Task OnCompletedAsync()
@@ -314,6 +421,16 @@ namespace Grainuler
             var streamId = await taskGrain.GetStreamId();
             var stream = streamProvider.GetStream<TaskEvent>(streamId, "default");
             return stream;
+        }
+
+        public async Task<Grainuler.DataTransferObjects.Enums.TaskStatus> GetCurrentStatus()
+        {
+
+            DataTransferObjects.Enums.TaskStatus result = State?.CurrentStatus ?? DataTransferObjects.Enums.TaskStatus.NA;
+            if(result != DataTransferObjects.Enums.TaskStatus.Expired && HaveAllRemindersExpired())
+                await RaiseTaskExpiredEvent();
+
+            return result;
         }
     }
 }

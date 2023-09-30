@@ -7,5 +7,6 @@ namespace Grainuler.Abstractions
     {
         Task<Guid> GetStreamId();
         Task Initiate(ScheduleTaskGrainInitiationParameter parameter);
+        Task<Grainuler.DataTransferObjects.Enums.TaskStatus> GetCurrentStatus();
     }
 }
